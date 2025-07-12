@@ -1,0 +1,1016 @@
+{
+    "info": {
+        "_postman_id": "ir-system-services",
+        "name": "IR System Services Collection",
+        "description": "مجموعة خدمات نظام البحث في المعلومات (SOA Architecture)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Loader Service",
+            "item": [
+                {
+                    "name": "Get Available Datasets",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8001/datasets",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8001",
+                            "path": [
+                                "datasets"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8001/datasets",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8001",
+                                    "path": [
+                                        "datasets"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"datasets\": [\n    {\n      \"name\": \"msmarco-passage\",\n      \"description\": \"MS MARCO Passage Retrieval Dataset\",\n      \"status\": \"not_loaded\"\n    },\n    {\n      \"name\": \"vaswani\",\n      \"description\": \"Vaswani Collection\",\n      \"status\": \"loaded\",\n      \"document_count\": 11429\n    }\n  ],\n  \"total_loaded\": 1\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Load Dataset",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8001/load-dataset?dataset_name=vaswani&limit=1000",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8001",
+                            "path": [
+                                "load-dataset"
+                            ],
+                            "query": [
+                                {
+                                    "key": "dataset_name",
+                                    "value": "vaswani"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "1000"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8001/load-dataset?dataset_name=vaswani&limit=1000",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8001",
+                                    "path": [
+                                        "load-dataset"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "dataset_name",
+                                            "value": "vaswani"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "1000"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"dataset_name\": \"vaswani\",\n  \"loaded_documents\": 1000,\n  \"duration_seconds\": 45.23,\n  \"database_path\": \"data/ir_documents.db\"\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Dataset Info",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8001/dataset/vaswani",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8001",
+                            "path": [
+                                "dataset",
+                                "vaswani"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8001/dataset/vaswani",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8001",
+                                    "path": [
+                                        "dataset",
+                                        "vaswani"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"dataset_name\": \"vaswani\",\n  \"statistics\": {\n    \"total_documents\": 11429,\n    \"first_load\": \"2024-01-15 10:30:00\",\n    \"last_load\": \"2024-01-15 10:30:00\",\n    \"average_content_length\": 245.67\n  },\n  \"sample_documents\": [\n    {\n      \"doc_id\": \"1\",\n      \"content_preview\": \"This paper presents a new approach to information retrieval...\",\n      \"created_at\": \"2024-01-15 10:30:00\"\n    }\n  ]\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8001/health",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8001",
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8001/health",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8001",
+                                    "path": [
+                                        "health"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"healthy\",\n  \"database_connected\": true,\n  \"total_documents\": 11429,\n  \"timestamp\": \"2024-01-15T10:30:00\"\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Preprocessor Service",
+            "item": [
+                {
+                    "name": "Preprocess Text",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"text\": \"This is a sample text for preprocessing. It contains stopwords and punctuation!\",\n  \"return_tokens\": true,\n  \"min_length\": 3,\n  \"remove_stopwords\": true,\n  \"use_lemmatization\": true\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8002/preprocess",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8002",
+                            "path": [
+                                "preprocess"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"This is a sample text for preprocessing. It contains stopwords and punctuation!\",\n  \"return_tokens\": true,\n  \"min_length\": 3,\n  \"remove_stopwords\": true,\n  \"use_lemmatization\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8002/preprocess",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8002",
+                                    "path": [
+                                        "preprocess"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"result\": [\n    \"sample\",\n    \"text\",\n    \"preprocessing\",\n    \"contain\",\n    \"stopword\",\n    \"punctuation\"\n  ]\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Preprocessing Stats",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"text\": \"This is a sample text for preprocessing. It contains stopwords and punctuation!\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8002/stats",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8002",
+                            "path": [
+                                "stats"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"This is a sample text for preprocessing. It contains stopwords and punctuation!\"\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8002/stats",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8002",
+                                    "path": [
+                                        "stats"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"statistics\": {\n    \"original_length\": 75,\n    \"processed_length\": 45,\n    \"tokens_count\": 6,\n    \"stopwords_removed\": 4,\n    \"short_words_removed\": 1\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8002/health",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8002",
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8002/health",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8002",
+                                    "path": [
+                                        "health"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"healthy\"\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Indexing Service",
+            "item": [
+                {
+                    "name": "Build Index",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8003/build-index?dataset_name=vaswani&limit=1000&min_token_length=2",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8003",
+                            "path": [
+                                "build-index"
+                            ],
+                            "query": [
+                                {
+                                    "key": "dataset_name",
+                                    "value": "vaswani"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "1000"
+                                },
+                                {
+                                    "key": "min_token_length",
+                                    "value": "2"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8003/build-index?dataset_name=vaswani&limit=1000&min_token_length=2",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8003",
+                                    "path": [
+                                        "build-index"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "dataset_name",
+                                            "value": "vaswani"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "1000"
+                                        },
+                                        {
+                                            "key": "min_token_length",
+                                            "value": "2"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"dataset\": \"vaswani\",\n  \"indexed_documents\": 1000,\n  \"index_terms\": 15420,\n  \"index_file\": \"indexes/vaswani_inverted_index.joblib\"\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Index Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8003/index-stats/vaswani",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8003",
+                            "path": [
+                                "index-stats",
+                                "vaswani"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8003/index-stats/vaswani",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8003",
+                                    "path": [
+                                        "index-stats",
+                                        "vaswani"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"dataset\": \"vaswani\",\n  \"statistics\": {\n    \"total_terms\": 15420,\n    \"total_postings\": 125000,\n    \"average_postings_per_term\": 8.11,\n    \"top_terms\": [\n      [\"information\", 850],\n      [\"retrieval\", 720],\n      [\"system\", 650]\n    ],\n    \"index_size_mb\": 2.45\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Search in Index",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"information retrieval systems\",\n  \"dataset_name\": \"vaswani\",\n  \"max_results\": 5\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8003/search",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8003",
+                            "path": [
+                                "search"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"query\": \"information retrieval systems\",\n  \"dataset_name\": \"vaswani\",\n  \"max_results\": 5\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8003/search",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8003",
+                                    "path": [
+                                        "search"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"query\": \"information retrieval systems\",\n  \"dataset\": \"vaswani\",\n  \"results_count\": 5,\n  \"results\": [\n    \"doc_123\",\n    \"doc_456\",\n    \"doc_789\",\n    \"doc_234\",\n    \"doc_567\"\n  ]\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8003/health",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8003",
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8003/health",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8003",
+                                    "path": [
+                                        "health"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"healthy\",\n  \"indexes_count\": 2,\n  \"indexes\": [\n    \"vaswani_inverted_index.joblib\",\n    \"msmarco_inverted_index.joblib\"\n  ]\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Search Service",
+            "item": [
+                {
+                    "name": "Get Search Methods",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8004/methods",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8004",
+                            "path": [
+                                "methods"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8004/methods",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8004",
+                                    "path": [
+                                        "methods"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"methods\": {\n    \"tfidf\": {\n      \"description\": \"البحث باستخدام TF-IDF\",\n      \"parameters\": [\"query\", \"top_k\", \"dataset_name\"]\n    },\n    \"embeddings\": {\n      \"description\": \"البحث باستخدام Embeddings\",\n      \"parameters\": [\"query\", \"top_k\", \"dataset_name\"]\n    },\n    \"hybrid\": {\n      \"description\": \"البحث الهجين (TF-IDF + Embeddings)\",\n      \"parameters\": [\"query\", \"alpha\", \"top_k\", \"dataset_name\"]\n    }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Search (TF-IDF)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"tfidf\",\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8004/search",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8004",
+                            "path": [
+                                "search"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"tfidf\",\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8004/search",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8004",
+                                    "path": [
+                                        "search"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"tfidf\",\n  \"dataset\": \"simple\",\n  \"results_count\": 5,\n  \"results\": [\n    {\n      \"document_id\": 42,\n      \"score\": 0.85\n    },\n    {\n      \"document_id\": 15,\n      \"score\": 0.72\n    },\n    {\n      \"document_id\": 78,\n      \"score\": 0.68\n    },\n    {\n      \"document_id\": 23,\n      \"score\": 0.65\n    },\n    {\n      \"document_id\": 91,\n      \"score\": 0.61\n    }\n  ]\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Search (Embeddings)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"embeddings\",\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8004/search",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8004",
+                            "path": [
+                                "search"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"embeddings\",\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8004/search",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8004",
+                                    "path": [
+                                        "search"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"query\": \"neural networks computer vision\",\n  \"method\": \"embeddings\",\n  \"dataset\": \"simple\",\n  \"results_count\": 5,\n  \"results\": [\n    {\n      \"document_id\": 67,\n      \"score\": 0.92\n    },\n    {\n      \"document_id\": 34,\n      \"score\": 0.88\n    },\n    {\n      \"document_id\": 89,\n      \"score\": 0.85\n    },\n    {\n      \"document_id\": 12,\n      \"score\": 0.82\n    },\n    {\n      \"document_id\": 45,\n      \"score\": 0.79\n    }\n  ]\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Hybrid Search",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"alpha\": 0.5,\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:8004/hybrid-search",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8004",
+                            "path": [
+                                "hybrid-search"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"query\": \"neural networks computer vision\",\n  \"alpha\": 0.5,\n  \"top_k\": 5,\n  \"dataset_name\": \"simple\"\n}"
+                                },
+                                "url": {
+                                    "raw": "http://localhost:8004/hybrid-search",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8004",
+                                    "path": [
+                                        "hybrid-search"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"success\",\n  \"query\": \"neural networks computer vision\",\n  \"dataset\": \"simple\",\n  \"alpha\": 0.5,\n  \"results_count\": 5,\n  \"results\": [\n    {\n      \"document_id\": 67,\n      \"score\": 0.89\n    },\n    {\n      \"document_id\": 42,\n      \"score\": 0.85\n    },\n    {\n      \"document_id\": 34,\n      \"score\": 0.82\n    },\n    {\n      \"document_id\": 15,\n      \"score\": 0.78\n    },\n    {\n      \"document_id\": 89,\n      \"score\": 0.75\n    }\n  ],\n  \"comparison\": {\n    \"tfidf_only\": {\n      \"top_document\": 42,\n      \"score\": 0.85\n    },\n    \"embeddings_only\": {\n      \"top_document\": 67,\n      \"score\": 0.92\n    },\n    \"hybrid\": {\n      \"top_document\": 67,\n      \"score\": 0.89\n    }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:8004/health",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "8004",
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    },
+                    "response": [
+                        {
+                            "name": "Success Response",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "http://localhost:8004/health",
+                                    "protocol": "http",
+                                    "host": [
+                                        "localhost"
+                                    ],
+                                    "port": "8004",
+                                    "path": [
+                                        "health"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "cookie": [],
+                            "body": "{\n  \"status\": \"healthy\",\n  \"models\": {\n    \"simple\": {\n      \"tfidf_model\": true,\n      \"tfidf_matrix\": true,\n      \"embedding_model\": true,\n      \"embedding_matrix\": true\n    }\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "loader_base_url",
+            "value": "http://localhost:8001",
+            "type": "string"
+        },
+        {
+            "key": "preprocessor_base_url",
+            "value": "http://localhost:8002",
+            "type": "string"
+        },
+        {
+            "key": "indexing_base_url",
+            "value": "http://localhost:8003",
+            "type": "string"
+        },
+        {
+            "key": "search_base_url",
+            "value": "http://localhost:8004",
+            "type": "string"
+        }
+    ]
+}
