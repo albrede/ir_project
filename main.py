@@ -13,5 +13,6 @@ def main():
     insert_documents(dataset_name, docs)
     print(f"[✓] تم تحميل وتخزين {len(docs)} مستند في قاعدة البيانات تحت مجموعة {dataset_name}")
 
+
 if __name__ == "__main__":
     main() 
