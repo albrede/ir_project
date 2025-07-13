@@ -78,7 +78,7 @@ def read_root():
 @app.post("/build-index")
 def build_index(
     dataset_name: str = Query(..., description="Dataset name"),
-    limit: Optional[int] = Query(200000, description="Number of documents to index (optional)"),
+    limit: Optional[int] = Query(500000, description="Number of documents to index (optional)"),
     min_token_length: int = Query(2, description="Minimum word length")
 ):
     try:

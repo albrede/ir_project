@@ -42,7 +42,7 @@ def build_embedding_model(texts, save_name, doc_ids=None, model_name='paraphrase
         emb_float32 = np.atleast_2d(embeddings.astype(np.float32))
         dim = emb_float32.shape[1]
         index = faiss.IndexFlatL2(dim)
-        index.add(n=emb_float32.shape[0], x=emb_float32)
+        index.add(emb_float32)
         faiss.write_index(index, faiss_path)
         print(f"[✓] FAISS index saved at: {faiss_path}")
     except Exception as e:
@@ -119,3 +119,54 @@ def load_faiss_index(dataset_name):
     except Exception as e:
         print(f"[❌] Error loading FAISS index: {e}")
         return None
+
+def build_faiss_index_from_existing(dataset_name):
+    """
+    بناء FAISS index من الملفات الموجودة (بدون إعادة بناء النموذج والمصفوفة)
+    Args:
+        dataset_name: اسم الداتا ست (مثل "antique/test")
+    """
+    try:
+        import faiss
+        clean_save_name = dataset_name.replace('/', '_')
+        vectors_path = os.path.join(VECTORS_DIR, f"{clean_save_name}_embedding_vectors.joblib")
+        faiss_path = os.path.join(VECTORS_DIR, f"{clean_save_name}_faiss.index")
+        
+        # التحقق من وجود ملف المتجهات
+        if not os.path.exists(vectors_path):
+            raise FileNotFoundError(f"Embedding vectors file not found: {vectors_path}")
+        
+        print(f"[⏳] Loading existing embeddings from: {vectors_path}")
+        data = joblib.load(vectors_path)
+        embeddings = data["vectors"]
+        doc_ids = data["doc_ids"]
+        
+        print(f"[⏳] Building FAISS index for {len(embeddings)} documents...")
+        
+        # تحويل المتجهات إلى float32 وضمان أنها ثنائية الأبعاد
+        emb_float32 = np.atleast_2d(embeddings.astype(np.float32))
+        dim = emb_float32.shape[1]
+        
+        # بناء FAISS index
+        index = faiss.IndexFlatL2(dim)
+        index.add(emb_float32)
+        
+        # حفظ FAISS index
+        faiss.write_index(index, faiss_path)
+        
+        print(f"[✓] FAISS index built and saved at: {faiss_path}")
+        print(f"[📊] Index statistics: {len(embeddings)} documents, {dim} dimensions")
+        
+        return faiss_path
+        
+    except Exception as e:
+        print(f"[❌] Error building FAISS index: {e}")
+        raise
+
+def check_faiss_index_exists(dataset_name):
+    """
+    التحقق من وجود FAISS index للداتا ست
+    """
+    clean_save_name = dataset_name.replace('/', '_')
+    faiss_path = os.path.join(VECTORS_DIR, f"{clean_save_name}_faiss.index")
+    return os.path.exists(faiss_path)

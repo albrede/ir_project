@@ -487,7 +487,7 @@ def load_dataset(
 def download_qrel(dataset_name: str = Query(..., description="اسم مجموعة البيانات")):
     """تحميل ملف qrel لمجموعة بيانات وحفظه في مجلد evaluation"""
     try:
-        valid_datasets = ["beir/trec-covid", "beir/arguana"]
+        valid_datasets = ["antique/test", "wikir/en1k/test"]
         if dataset_name not in valid_datasets:
             raise HTTPException(status_code=400, detail=f"مجموعة البيانات غير مدعومة. الخيارات المتاحة: {valid_datasets}")
         os.makedirs("evaluation", exist_ok=True)
@@ -511,7 +511,7 @@ def download_qrel(dataset_name: str = Query(..., description="اسم مجموع�
 def download_queries(dataset_name: str = Query(..., description="اسم مجموعة البيانات")):
     """تحميل queries لمجموعة بيانات وحفظها في مجلد evaluation"""
     try:
-        valid_datasets = ["beir/trec-covid", "beir/arguana"]
+        valid_datasets = ["antique/test", "wikir/en1k/test"]
         if dataset_name not in valid_datasets:
             raise HTTPException(status_code=400, detail=f"مجموعة البيانات غير مدعومة. الخيارات المتاحة: {valid_datasets}")
         os.makedirs("evaluation", exist_ok=True)
