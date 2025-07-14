@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Query Processing Service",
-    description="خدمة معالجة الاستعلامات لتمثيل VSM_TF-IDF و Embeddings",
+    description="Service for processing queries for VSM_TF-IDF and Embeddings representation",
     version="1.0.0"
 )
 
@@ -24,12 +24,12 @@ def read_root():
     return {
         "service": "Query Processing Service",
         "version": "1.0.0",
-        "description": "خدمة معالجة الاستعلامات لتمثيل VSM_TF-IDF و Embeddings",
+        "description": "Service for processing queries for VSM_TF-IDF and Embeddings representation",
         "endpoints": {
-            "POST /process-query": "معالجة الاستعلام",
-            "GET /process-query": "معالجة الاستعلام (GET)",
-            "GET /methods": "طرق المعالجة المتاحة",
-            "GET /health": "فحص صحة الخدمة"
+            "POST /process-query": "Process query",
+            "GET /process-query": "Process query (GET)",
+            "GET /methods": "Available processing methods",
+            "GET /health": "Service health check"
         }
     }
 
@@ -39,35 +39,35 @@ def get_processing_methods():
         "status": "success",
         "methods": {
             "tfidf": {
-                "description": "معالجة الاستعلام لـ TF-IDF",
-                "preprocessing": "Lemmatization, Tokenization, Lowercasing, إزالة التوقفات",
-                "output": "نص معالج أو متجه TF-IDF"
+                "description": "Query processing for TF-IDF",
+                "preprocessing": "Lemmatization, Tokenization, Lowercasing, Stop word removal",
+                "output": "Processed text or TF-IDF vector"
             },
             "embedding": {
-                "description": "معالجة الاستعلام لـ Sentence Embeddings",
-                "preprocessing": "معالجة بسيطة (sentence-transformers يتعامل مع المعالجة الداخلية)",
-                "output": "نص معالج أو متجه Embedding"
+                "description": "Query processing for Sentence Embeddings",
+                "preprocessing": "Simple processing (sentence-transformers handles internal processing)",
+                "output": "Processed text or Embedding vector"
             },
             "hybrid": {
-                "description": "معالجة الاستعلام للبحث الهجين المتوازي",
-                "preprocessing": "مزيج من TF-IDF و Embedding",
-                "output": "نصوص معالجة أو متجهات لكلا الطريقتين"
+                "description": "Query processing for parallel hybrid search",
+                "preprocessing": "Combination of TF-IDF and Embedding",
+                "output": "Processed texts or vectors for both methods"
             },
             "hybrid-sequential": {
-                "description": "معالجة الاستعلام للبحث الهجين المتسلسل",
-                "preprocessing": "مزيج من TF-IDF و Embedding مع مراحل متسلسلة",
-                "output": "نصوص معالجة أو متجهات لكلا الطريقتين"
+                "description": "Query processing for sequential hybrid search",
+                "preprocessing": "Combination of TF-IDF and Embedding with sequential stages",
+                "output": "Processed texts or vectors for both methods"
             }
         }
     }
 
 @app.post("/process-query")
 def process_query_post(request: QueryProcessingRequest):
-    """معالجة الاستعلام (POST)"""
+    """Process query (POST)"""
     try:
-        logger.info(f"معالجة استعلام: {request.query} بطريقة {request.method}")
+        logger.info(f"Processing query: {request.query} using method {request.method}")
         
-        # التحقق من صحة الطريقة
+        # Validate method
         processor = QueryProcessor(
             method=request.method,
             dataset_name=request.dataset_name
@@ -76,7 +76,7 @@ def process_query_post(request: QueryProcessingRequest):
         if not processor.validate_method(request.method):
             raise HTTPException(
                 status_code=400,
-                detail=f"طريقة المعالجة '{request.method}' غير مدعومة"
+                detail=f"Processing method '{request.method}' not supported"
             )
         
         processed_result = processor.process_query(
@@ -95,25 +95,25 @@ def process_query_post(request: QueryProcessingRequest):
         }
         
     except Exception as e:
-        logger.error(f"خطأ في معالجة الاستعلام: {e}")
+        logger.error(f"Error processing query: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في معالجة الاستعلام: {str(e)}"
+            detail=f"Error processing query: {str(e)}"
         )
 
 @app.get("/process-query")
 def process_query_get(
-    query: str = Query(..., description="النص الأصلي للاستعلام"),
-    method: str = Query("tfidf", description="طريقة المعالجة: tfidf, embedding, hybrid, hybrid-sequential"),
-    dataset_name: str = Query("simple", description="اسم مجموعة البيانات"),
-    return_vector: bool = Query(False, description="إرجاع المتجه بدلاً من النص المعالج")
+    query: str = Query(..., description="Original query text"),
+    method: str = Query("tfidf", description="Processing method: tfidf, embedding, hybrid, hybrid-sequential"),
+    dataset_name: str = Query("simple", description="Dataset name"),
+    return_vector: bool = Query(False, description="Return vector instead of processed text")
 ):
-    """معالجة الاستعلام (GET)"""
+    """Process query (GET)"""
     try:
         if not query or not query.strip():
             raise HTTPException(
                 status_code=400,
-                detail="الاستعلام لا يمكن أن يكون فارغاً"
+                detail="Query cannot be empty"
             )
         
         processor = QueryProcessor(
@@ -124,7 +124,7 @@ def process_query_get(
         if not processor.validate_method(method):
             raise HTTPException(
                 status_code=400,
-                detail=f"طريقة المعالجة '{method}' غير مدعومة"
+                detail=f"Processing method '{method}' not supported"
             )
         
         processed_result = processor.process_query(
@@ -147,15 +147,15 @@ def process_query_get(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"خطأ في معالجة الاستعلام: {e}")
+        logger.error(f"Error processing query: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في معالجة الاستعلام: {str(e)}"
+            detail=f"Error processing query: {str(e)}"
         )
 
 @app.get("/health")
 def health_check():
-    """فحص صحة الخدمة"""
+    """Service health check"""
     try:
         processor = QueryProcessor(method="tfidf", dataset_name="simple")
         return {

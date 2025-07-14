@@ -1,62 +1,267 @@
 import logging
-from services.preprocessing import preprocess, preprocess_for_vectorization, preprocess_for_indexing
-from services.vectorization.tfidf_vectorizer import get_tfidf_vector, get_tfidf_vector_serializable, load_tfidf_model
-from services.vectorization.embedding_vectorizer import get_embedding_vector, get_embedding_vector_serializable, load_embedding_model
+import requests
+import requests
+import requests
 import joblib
 import os
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
+def preprocess_via_api(text, return_tokens=False, min_length=2, remove_stopwords=True, use_lemmatization=True):
+    """Call preprocessing API"""
+    url = "http://localhost:8001/preprocess"
+    
+    payload = {
+        "text": text,
+        "return_tokens": return_tokens,
+        "min_length": min_length,
+        "remove_stopwords": remove_stopwords,
+        "use_lemmatization": use_lemmatization
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["result"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to preprocessing API: {e}")
+    except Exception as e:
+        raise Exception(f"Error processing text via API: {e}")
+
+def preprocess_for_vectorization_via_api(text):
+    """Call preprocessing API for vectorization"""
+    return preprocess_via_api(text, return_tokens=False, min_length=2, remove_stopwords=True, use_lemmatization=True)
+
+def preprocess_for_indexing_via_api(text, min_token_length=2):
+    """Call preprocessing API for indexing"""
+    return preprocess_via_api(text, return_tokens=True, min_length=min_token_length, remove_stopwords=True, use_lemmatization=True)
+
+def load_tfidf_model_via_api(dataset_name: str):
+    """Client function to load TF-IDF model via API"""
+    url = "http://localhost:8002/load-tfidf"
+    
+    payload = {
+        "dataset_name": dataset_name
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            # Load the actual model files
+            import os
+            import joblib
+            
+            clean_dataset_name = dataset_name.replace('/', '_')
+            model_path = os.path.join("models", f"{clean_dataset_name}_tfidf_model.joblib")
+            matrix_path = os.path.join("vectors", f"{clean_dataset_name}_tfidf_matrix.joblib")
+            
+            vectorizer = joblib.load(model_path)
+            data = joblib.load(matrix_path)
+            tfidf_matrix = data["matrix"]
+            doc_ids = data["doc_ids"]
+            
+            return vectorizer, tfidf_matrix, doc_ids
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to load TF-IDF model via API: {e}")
+
+def get_tfidf_vector_via_api(dataset_name: str, query: str):
+    """Client function to get TF-IDF vector via API"""
+    url = "http://localhost:8002/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": False
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            import numpy as np
+            return np.array(data["vector"]).reshape(1, -1)
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get TF-IDF vector via API: {e}")
+
+def get_tfidf_vector_serializable_via_api(dataset_name: str, query: str):
+    """Client function to get serializable TF-IDF vector via API"""
+    url = "http://localhost:8002/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": True
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["vector"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get serializable TF-IDF vector via API: {e}")
+
+def load_embedding_model_via_api(dataset_name: str):
+    """Client function to load Embedding model via API"""
+    url = "http://localhost:8003/load-embedding"
+    
+    payload = {
+        "dataset_name": dataset_name
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            # Load the actual model files
+            import os
+            import joblib
+            
+            clean_dataset_name = dataset_name.replace('/', '_')
+            model_path = os.path.join("models", f"{clean_dataset_name}_embedding_model.joblib")
+            vectors_path = os.path.join("vectors", f"{clean_dataset_name}_embedding_vectors.joblib")
+            
+            model = joblib.load(model_path)
+            data = joblib.load(vectors_path)
+            # Handle both "vectors" and "embeddings" keys for compatibility
+            if "vectors" in data:
+                embeddings = data["vectors"]
+            elif "embeddings" in data:
+                embeddings = data["embeddings"]
+            else:
+                raise KeyError("Neither 'vectors' nor 'embeddings' key found in data")
+            doc_ids = data["doc_ids"]
+            
+            return model, embeddings, doc_ids
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to load Embedding model via API: {e}")
+
+def get_embedding_vector_via_api(dataset_name: str, query: str):
+    """Client function to get Embedding vector via API"""
+    url = "http://localhost:8003/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": False
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            import numpy as np
+            return np.array(data["vector"]).reshape(1, -1)
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get Embedding vector via API: {e}")
+
+def get_embedding_vector_serializable_via_api(dataset_name: str, query: str):
+    """Client function to get serializable Embedding vector via API"""
+    url = "http://localhost:8003/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": True
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["vector"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get serializable Embedding vector via API: {e}")
+
 class QueryProcessor:
-    def __init__(self, method="tfidf", dataset_name="simple"):
+    def __init__(self, method="tfidf", dataset_name="simple", embedding_model=None, tfidf_model=None):
         """
-        تهيئة معالج الاستعلامات
+        Query processor initialization
         Args:
-            method: طريقة التمثيل ("tfidf", "embedding", "hybrid", "hybrid-sequential")
-            dataset_name: اسم مجموعة البيانات
+            method: Representation method ("tfidf", "embedding", "hybrid", "hybrid-sequential")
+            dataset_name: Dataset name
+            embedding_model: Embedding model (optional)
+            tfidf_model: TF-IDF model (optional)
         """
         self.method = method
         self.dataset_name = dataset_name
-        self.tfidf_model = None
-        self.embedding_model = None
+        self.tfidf_model = tfidf_model
+        self.embedding_model = embedding_model
         
-        # تحميل النماذج المطلوبة
+        # Load required models if not passed
         self._load_models()
     
     def _load_models(self):
-        """تحميل النماذج المطلوبة حسب الطريقة"""
+        """Load required models based on the method"""
         try:
-            if self.method in ["tfidf", "hybrid", "hybrid-sequential"]:
-                # تحميل نموذج TF-IDF
+            if self.method in ["tfidf", "hybrid", "hybrid-sequential"] and self.tfidf_model is None:
+                # Load TF-IDF model
                 try:
-                    self.tfidf_model, _, _ = load_tfidf_model(self.dataset_name)
-                    logger.info(f"تم تحميل نموذج TF-IDF لـ {self.dataset_name}")
+                    self.tfidf_model, _, _ = load_tfidf_model_via_api(self.dataset_name)
+                    logger.info(f"TF-IDF model loaded for {self.dataset_name}")
                 except Exception as e:
-                    logger.warning(f"فشل في تحميل نموذج TF-IDF لـ {self.dataset_name}: {e}")
+                    logger.warning(f"Failed to load TF-IDF model for {self.dataset_name}: {e}")
             
-            if self.method in ["embedding", "hybrid", "hybrid-sequential"]:
-                # تحميل نموذج Embedding
+            if self.method in ["embedding", "hybrid", "hybrid-sequential"] and self.embedding_model is None:
+                # Load Embedding model
                 try:
-                    self.embedding_model, _, _ = load_embedding_model(self.dataset_name)
-                    logger.info(f"تم تحميل نموذج Embedding لـ {self.dataset_name}")
+                    self.embedding_model, _, _ = load_embedding_model_via_api(self.dataset_name)
+                    logger.info(f"Embedding model loaded for {self.dataset_name}")
                 except Exception as e:
-                    logger.warning(f"فشل في تحميل نموذج Embedding لـ {self.dataset_name}: {e}")
+                    logger.warning(f"Failed to load Embedding model for {self.dataset_name}: {e}")
                     
         except Exception as e:
-            logger.error(f"خطأ في تحميل النماذج: {e}")
+            logger.error(f"Error loading models: {e}")
     
     def process_query(self, query: str, return_vector: bool = False):
         """
-        معالجة الاستعلام حسب الطريقة المحددة
+        Process query according to the specified method
         Args:
-            query: النص الأصلي للاستعلام
-            return_vector: إرجاع المتجه بدلاً من النص المعالج
+            query: Original query text
+            return_vector: Return vector instead of processed text
         Returns:
-            النص المعالج أو المتجه حسب return_vector
+            Processed text or vector based on return_vector
         """
         if not query or not query.strip():
-            raise ValueError("الاستعلام لا يمكن أن يكون فارغاً")
+            raise ValueError("Query cannot be empty")
         
         try:
             if self.method == "tfidf":
@@ -68,28 +273,28 @@ class QueryProcessor:
             elif self.method == "hybrid-sequential":
                 return self._process_hybrid_sequential_query(query, return_vector)
             else:
-                raise ValueError(f"طريقة المعالجة '{self.method}' غير مدعومة")
+                raise ValueError(f"Processing method '{self.method}' is not supported")
                 
         except Exception as e:
-            logger.error(f"خطأ في معالجة الاستعلام: {e}")
+            logger.error(f"Error processing query: {e}")
             raise
     
     def _process_tfidf_query(self, query: str, return_vector: bool = False):
-        """معالجة الاستعلام لـ TF-IDF"""
-        # استخدام نفس المعالجة المستخدمة في بناء النموذج
-        processed_text = preprocess_for_vectorization(query)
+        """Process query for TF-IDF"""
+        # Use the same preprocessing used in model building
+        processed_text = preprocess_for_vectorization_via_api(query)
         
         if return_vector and self.tfidf_model:
-            # إرجاع المتجه مع معلومات إضافية للوضوح
-            vector = get_tfidf_vector_serializable(self.tfidf_model, processed_text)
+            # Return vector with additional information for clarity
+            vector = get_tfidf_vector_serializable_via_api(self.dataset_name, processed_text)
             
-            # الحصول على أسماء الكلمات (features)
+            # Get feature names (words)
             feature_names = self.tfidf_model.get_feature_names_out()
             
-            # إنشاء قائمة الكلمات الموجودة مع قيمها
+            # Create list of existing words with their values
             word_scores = []
             for i, score in enumerate(vector):
-                if score > 0:  # فقط الكلمات الموجودة
+                if score > 0:  # Only existing words
                     word_scores.append({
                         "word": feature_names[i],
                         "tfidf_score": score
@@ -103,18 +308,18 @@ class QueryProcessor:
                 "processed_text": processed_text
             }
         else:
-            # إرجاع النص المعالج
+            # Return processed text
             return processed_text
     
     def _process_embedding_query(self, query: str, return_vector: bool = False):
-        """معالجة الاستعلام لـ Embedding"""
-        # للـ embeddings، نستخدم النص الأصلي مع معالجة بسيطة
-        # لأن sentence-transformers يقوم بالمعالجة الداخلية
+        """Process query for Embedding"""
+        # For embeddings, we use the original text with simple processing
+        # because sentence-transformers handles internal processing
         processed_text = query.strip()
         
         if return_vector and self.embedding_model:
-            # إرجاع المتجه مع معلومات إضافية للوضوح
-            vector = get_embedding_vector_serializable(self.embedding_model, processed_text)
+            # Return vector with additional information for clarity
+            vector = get_embedding_vector_serializable_via_api(self.dataset_name, processed_text)
             
             return {
                 "vector": vector,
@@ -124,16 +329,16 @@ class QueryProcessor:
                 "note": "Embedding vectors represent semantic meaning, not individual words"
             }
         else:
-            # إرجاع النص المعالج
+            # Return processed text
             return processed_text
     
     def _process_hybrid_query(self, query: str, return_vector: bool = False):
-        """معالجة الاستعلام للبحث الهجين المتوازي"""
+        """Process query for parallel hybrid search"""
         tfidf_result = self._process_tfidf_query(query, return_vector)
         embedding_result = self._process_embedding_query(query, return_vector)
         
         if return_vector:
-            # إرجاع كلا المتجهين مع معلومات إضافية
+            # Return both vectors with additional information
             return {
                 "tfidf": tfidf_result,
                 "embedding": embedding_result,
@@ -141,19 +346,19 @@ class QueryProcessor:
                 "note": "Combines TF-IDF (lexical) and Embedding (semantic) representations"
             }
         else:
-            # إرجاع النصوص المعالجة
+            # Return processed texts
             return {
                 "tfidf_text": tfidf_result,
                 "embedding_text": embedding_result
             }
     
     def _process_hybrid_sequential_query(self, query: str, return_vector: bool = False):
-        """معالجة الاستعلام للبحث الهجين المتسلسل"""
+        """Process query for sequential hybrid search"""
         tfidf_result = self._process_tfidf_query(query, return_vector)
         embedding_result = self._process_embedding_query(query, return_vector)
         
         if return_vector:
-            # إرجاع كلا المتجهين مع معلومات إضافية
+            # Return both vectors with additional information
             return {
                 "tfidf": tfidf_result,
                 "embedding": embedding_result,
@@ -161,7 +366,7 @@ class QueryProcessor:
                 "note": "Uses TF-IDF first, then refines with Embedding"
             }
         else:
-            # إرجاع النصوص المعالجة
+            # Return processed texts
             return {
                 "tfidf_text": tfidf_result,
                 "embedding_text": embedding_result
@@ -169,11 +374,11 @@ class QueryProcessor:
     
     def get_processing_info(self, query: str) -> dict:
         """
-        الحصول على معلومات حول عملية المعالجة
+        Get information about the processing process
         Args:
-            query: النص الأصلي للاستعلام
+            query: Original query text
         Returns:
-            dict: معلومات المعالجة
+            dict: Processing information
         """
         try:
             return {
@@ -188,11 +393,11 @@ class QueryProcessor:
                 "processing_steps": self._get_processing_steps()
             }
         except Exception as e:
-            logger.error(f"خطأ في الحصول على معلومات المعالجة: {e}")
+            logger.error(f"Error getting processing information: {e}")
             return {"error": str(e)}
     
     def _get_processing_steps(self) -> list:
-        """الحصول على خطوات المعالجة حسب الطريقة"""
+        """Get processing steps based on the method"""
         steps = {
             "tfidf": [
                 "Tokenization",
@@ -202,13 +407,13 @@ class QueryProcessor:
                 "TF-IDF vectorization"
             ],
             "embedding": [
-                "Text cleaning",
+                "Simple text cleaning",
                 "Sentence embedding generation"
             ],
             "hybrid": [
                 "TF-IDF processing",
-                "Embedding processing", 
-                "Parallel combination"
+                "Embedding processing",
+                "Combination of both"
             ],
             "hybrid-sequential": [
                 "TF-IDF processing",
@@ -220,34 +425,34 @@ class QueryProcessor:
         return steps.get(self.method, ["Unknown method"])
     
     def get_supported_methods(self) -> list:
-        """الحصول على الطرق المدعومة"""
+        """Get supported methods"""
         return ["tfidf", "embedding", "hybrid", "hybrid-sequential"]
     
     def validate_method(self, method: str) -> bool:
-        """التحقق من صحة الطريقة"""
+        """Validate method"""
         return method in self.get_supported_methods()
 
     def get_query_vector_for_matching(self, query: str):
         """
-        إرجاع تمثيل الاستعلام كمتجه مناسب للمطابقة (numpy array 2D)
-        حسب الطريقة المختارة.
+        Return query representation as a suitable vector (numpy array 2D)
+        based on the selected method.
         """
         if self.method == "tfidf":
-            processed_text = preprocess_for_vectorization(query)
+            processed_text = preprocess_for_vectorization_via_api(query)
             if self.tfidf_model is None:
                 raise ValueError("TF-IDF model not loaded")
-            # دائماً numpy array 2D
-            return get_tfidf_vector(self.tfidf_model, processed_text)
+            # Always numpy array 2D
+            return get_tfidf_vector_via_api(self.dataset_name, processed_text)
         elif self.method == "embedding":
             processed_text = query.strip()
             if self.embedding_model is None:
                 raise ValueError("Embedding model not loaded")
-            return get_embedding_vector(self.embedding_model, processed_text).reshape(1, -1)
+            return get_embedding_vector_via_api(self.dataset_name, processed_text)
         elif self.method in ["hybrid", "hybrid-sequential"]:
-            processed_tfidf = preprocess_for_vectorization(query)
+            processed_tfidf = preprocess_for_vectorization_via_api(query)
             processed_embedding = query.strip()
-            tfidf_vec = get_tfidf_vector(self.tfidf_model, processed_tfidf)
-            embedding_vec = get_embedding_vector(self.embedding_model, processed_embedding).reshape(1, -1)
+            tfidf_vec = get_tfidf_vector_via_api(self.dataset_name, processed_tfidf)
+            embedding_vec = get_embedding_vector_via_api(self.dataset_name, processed_embedding)
             return {"tfidf": tfidf_vec, "embedding": embedding_vec}
         else:
-            raise ValueError(f"طريقة المعالجة '{self.method}' غير مدعومة للمطابقة")
+            raise ValueError(f"Processing method '{self.method}' is not supported for matching")

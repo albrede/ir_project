@@ -1,22 +1,99 @@
 import os
 import logging
-from services.vectorization.embedding_vectorizer import (
-    load_embedding_model, 
-    get_embedding_vector, 
-    search_faiss_index
-)
+import requests
 from services.database.db_handler import get_documents
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def load_embedding_model_via_api(dataset_name: str):
+    """Client function to load Embedding model via API"""
+    url = "http://localhost:8003/load-embedding"
+    
+    payload = {
+        "dataset_name": dataset_name
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            # Load the actual model files
+            import os
+            import joblib
+            
+            clean_dataset_name = dataset_name.replace('/', '_')
+            model_path = os.path.join("models", f"{clean_dataset_name}_embedding_model.joblib")
+            vectors_path = os.path.join("vectors", f"{clean_dataset_name}_embedding_vectors.joblib")
+            
+            model = joblib.load(model_path)
+            data = joblib.load(vectors_path)
+            embeddings = data["embeddings"]
+            doc_ids = data["doc_ids"]
+            
+            return model, embeddings, doc_ids
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to load Embedding model via API: {e}")
+
+def get_embedding_vector_via_api(dataset_name: str, query: str):
+    """Client function to get Embedding vector via API"""
+    url = "http://localhost:8003/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": False
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            import numpy as np
+            return np.array(data["vector"]).reshape(1, -1)
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get Embedding vector via API: {e}")
+
+def search_faiss_index_via_api(query_embedding, dataset_name: str, top_k: int = 5):
+    """Client function to search FAISS index via API"""
+    url = "http://localhost:8003/search-faiss"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query_embedding": query_embedding.tolist(),
+        "top_k": top_k
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["similar_indices"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to search FAISS index via API: {e}")
+
 class RAGService:
     def __init__(self, dataset_name, local_model_name="microsoft/DialoGPT-medium"):
         """
-        تهيئة خدمة RAG
+        RAG service initialization
         Args:
-            dataset_name: اسم الداتا ست
-            local_model_name: اسم النموذج المحلي (اختياري)
+            dataset_name: Dataset name
+            local_model_name: Local model name (optional)
         """
         self.dataset_name = dataset_name
         self.model = None
@@ -27,19 +104,19 @@ class RAGService:
         self._load_models()
     
     def _load_models(self):
-        """تحميل النماذج المطلوبة"""
+        """Load required models"""
         try:
-            self.model, _, self.doc_ids = load_embedding_model(self.dataset_name)
+            self.model, _, self.doc_ids = load_embedding_model_via_api(self.dataset_name)
             logger.info(f"✅ Models loaded for dataset: {self.dataset_name}")
         except Exception as e:
             logger.error(f"❌ Error loading models: {e}")
             raise
     
     def _load_local_llm(self):
-        """تحميل النموذج المحلي (يتم تحميله عند الحاجة فقط)"""
+        """Load local model (loaded only when needed)"""
         if self.local_llm is None:
             try:
-                # التحقق من وجود transformers
+                # Check for transformers
                 try:
                     from transformers import AutoTokenizer, AutoModelForCausalLM
                     import torch
@@ -49,14 +126,14 @@ class RAGService:
                 
                 logger.info(f"⏳ Loading local LLM: {self.local_model_name}")
                 
-                # تحميل الـ tokenizer
+                # Load tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.local_model_name)
                 
-                # إضافة token خاص للـ padding إذا لم يكن موجود
+                # Add special token for padding if not present
                 if self.tokenizer.pad_token is None:
                     self.tokenizer.pad_token = self.tokenizer.eos_token
                 
-                # تحميل النموذج
+                # Load model
                 self.local_llm = AutoModelForCausalLM.from_pretrained(
                     self.local_model_name,
                     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -68,35 +145,35 @@ class RAGService:
                 
             except Exception as e:
                 logger.error(f"❌ Error loading local LLM: {e}")
-                # إعادة تعيين المتغيرات في حالة الفشل
+                # Reset variables in case of failure
                 self.local_llm = None
                 self.tokenizer = None
                 raise
     
     def search_similar_documents(self, query, top_k=5):
         """
-        البحث عن الوثائق الأكثر تشابهًا مع الاستعلام
+        Search for documents most similar to the query
         """
         try:
-            # تحويل الاستعلام إلى embedding
-            query_embedding = get_embedding_vector(self.model, query)
+            # Convert query to embedding
+            query_embedding = get_embedding_vector_via_api(self.dataset_name, query)
             
-            # البحث في FAISS index
-            similar_indices = search_faiss_index(query_embedding, self.dataset_name, top_k)
+            # Search in FAISS index
+            similar_indices = search_faiss_index_via_api(query_embedding, self.dataset_name, top_k)
             
             if not similar_indices:
                 logger.warning("No similar documents found")
                 return []
             
-            # التحقق من وجود doc_ids
+            # Check for doc_ids
             if self.doc_ids is None:
                 logger.error("doc_ids is None")
                 return []
             
-            # استرجاع معرفات الوثائق
+            # Retrieve document IDs
             similar_doc_ids = [self.doc_ids[idx] for idx in similar_indices if idx < len(self.doc_ids)]
             
-            # استرجاع نصوص الوثائق من قاعدة البيانات
+            # Retrieve document texts from database
             documents = get_documents(similar_doc_ids)
             
             logger.info(f"✅ Found {len(documents)} similar documents")
@@ -108,38 +185,38 @@ class RAGService:
     
     def generate_rag_answer(self, query, top_k=5, llm_provider="local"):
         """
-        توليد إجابة باستخدام RAG
+        Generate answer using RAG
         Args:
-            query: الاستعلام
-            top_k: عدد الوثائق المراد استرجاعها
-            llm_provider: مزود خدمة LLM ("openai", "local", etc.)
+            query: Query
+            top_k: Number of documents to retrieve
+            llm_provider: LLM service provider ("openai", "local", etc.)
         """
         try:
-            # البحث عن الوثائق المشابهة
+            # Search for similar documents
             similar_docs = self.search_similar_documents(query, top_k)
             
             if not similar_docs:
-                return "عذرًا، لم أجد وثائق ذات صلة للإجابة على سؤالك."
+                return "Sorry, I couldn't find relevant documents to answer your question."
             
-            # بناء السياق من الوثائق
+            # Build context from documents
             context = self._build_context(similar_docs)
             
-            # توليد الإجابة باستخدام LLM
+            # Generate answer using LLM
             answer = self._call_llm(query, context, llm_provider)
             
             return answer
             
         except Exception as e:
             logger.error(f"❌ Error in RAG generation: {e}")
-            return f"حدث خطأ أثناء توليد الإجابة: {str(e)}"
+            return f"An error occurred while generating the answer: {str(e)}"
     
     def _build_context(self, documents):
-        """بناء السياق من الوثائق"""
+        """Build context from documents"""
         context_parts = []
         for i, doc in enumerate(documents, 1):
             content = doc.get('content', '')
             if content:
-                # تقصير المحتوى لتجنب تجاوز حدود النموذج
+                # Shorten content to avoid exceeding model limits
                 shortened_content = content[:500] + "..." if len(content) > 500 else content
                 context_parts.append(f"Document {i}:\n{shortened_content}\n")
         
@@ -147,27 +224,27 @@ class RAGService:
     
     def _call_llm(self, query, context, provider="local"):
         """
-        استدعاء LLM لتوليد الإجابة
+        Call LLM to generate answer
         """
         if provider == "openai":
             return self._call_openai_llm(query, context)
         elif provider == "local":
             return self._call_local_llm(query, context)
         else:
-            return f"مزود خدمة LLM '{provider}' غير مدعوم حاليًا."
+            return f"LLM service provider '{provider}' is not currently supported."
     
     def _call_local_llm(self, query, context):
         """
-        استدعاء LLM محلي باستخدام transformers
+        Call local LLM using transformers
         """
         try:
-            # تحميل النموذج المحلي إذا لم يكن محمل
+            # Load local model if not loaded
             self._load_local_llm()
             
             if self.local_llm is None or self.tokenizer is None:
-                return "عذرًا، لم يتم تحميل النموذج المحلي بنجاح."
+                return "Sorry, the local model was not loaded successfully."
             
-            # بناء الـ prompt
+            # Build prompt
             prompt = f"""Based on the following context, answer the question:
 
 Context:
@@ -177,7 +254,7 @@ Question: {query}
 
 Answer:"""
             
-            # ترميز النص
+            # Encode text
             inputs = self.tokenizer(
                 prompt, 
                 return_tensors="pt", 
@@ -186,12 +263,12 @@ Answer:"""
                 padding=True
             )
             
-            # توليد الإجابة
+            # Generate answer
             import torch
             with torch.no_grad():
                 outputs = self.local_llm.generate(
                     inputs["input_ids"],
-                    max_length=inputs["input_ids"].shape[1] + 150,  # إضافة 150 token للإجابة
+                    max_length=inputs["input_ids"].shape[1] + 150,  # Add 150 tokens for answer
                     temperature=0.7,
                     do_sample=True,
                     pad_token_id=self.tokenizer.eos_token_id,
@@ -199,54 +276,22 @@ Answer:"""
                     repetition_penalty=1.1
                 )
             
-            # فك ترميز الإجابة
+            # Decode answer
             generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             
-            # استخراج الإجابة فقط (بعد "Answer:")
+            # Extract answer only (after "Answer:")
             answer_start = generated_text.find("Answer:")
             if answer_start != -1:
                 answer = generated_text[answer_start + 7:].strip()
             else:
-                # إذا لم نجد "Answer:"، نأخذ النص بعد الـ prompt
+                # If we don't find "Answer:", take text after the prompt
                 answer = generated_text[len(prompt):].strip()
             
-            return answer if answer else "عذرًا، لم أتمكن من توليد إجابة مناسبة."
+            return answer if answer else "I couldn't generate a proper answer."
             
         except Exception as e:
-            logger.error(f"❌ Error in local LLM: {e}")
-            return f"حدث خطأ في النموذج المحلي: {str(e)}"
-    
-    def _call_openai_llm(self, query, context):
-        """
-        استدعاء OpenAI API
-        """
-        try:
-            import openai
-            
-            prompt = f"""
-            السياق التالي يحتوي على معلومات للإجابة على السؤال:
-            
-            {context}
-            
-            السؤال: {query}
-            
-            الإجابة:
-            """
-            
-            # استدعاء OpenAI API (للإصدار 1.x)
-            client = openai.OpenAI()
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.7
-            )
-            return response.choices[0].message.content
-            
-        except ImportError:
-            return "OpenAI library not installed. Please install it with: pip install openai"
-        except Exception as e:
-            return f"Error calling OpenAI: {str(e)}"
+            logger.error(f"❌ Error calling local LLM: {e}")
+            return f"Error generating answer: {str(e)}"
 
 def rag_answer(query, dataset_name, top_k=5, llm_provider="local"):
     """

@@ -1,10 +1,37 @@
 import os
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
-from services.preprocessing import preprocess
+import requests
+
+def preprocess_via_api(text, return_tokens=True):
+    """Call preprocessing API for tokenization"""
+    url = "http://localhost:8001/tokenize"
+    
+    payload = {
+        "text": text,
+        "return_tokens": True,
+        "min_length": 2,
+        "remove_stopwords": True,
+        "use_lemmatization": True
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["tokens"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to preprocessing API: {e}")
+    except Exception as e:
+        raise Exception(f"Error processing text via API: {e}")
 
 def custom_tokenizer(text):
-    return preprocess(text, return_tokens=True)
+    return preprocess_via_api(text, return_tokens=True)
 
 VECTORS_DIR = "vectors"
 MODELS_DIR = "models"

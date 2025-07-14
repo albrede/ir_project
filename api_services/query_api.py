@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Unified Information Retrieval API",
-    description="API موحد لجميع خدمات استرجاع المعلومات",
+    description="Unified API for all information retrieval services",
     version="1.0.0"
 )
 
@@ -24,31 +24,31 @@ class SearchRequest(BaseModel):
     method: str = "tfidf"  # "tfidf", "embedding", "hybrid", "hybrid-sequential"
     dataset_name: str = "simple"
     top_k: int = 10
-    alpha: Optional[float] = 0.5  # للبحث الهجين
-    first_stage: Optional[str] = "tfidf"  # للبحث المتسلسل
-    top_n: Optional[int] = 100  # للبحث المتسلسل
+    alpha: Optional[float] = 0.5  # for hybrid search
+    first_stage: Optional[str] = "tfidf"  # for sequential search
+    top_n: Optional[int] = 100  # for sequential search
 
 @app.get("/")
 def read_root():
     return {
         "service": "Unified Information Retrieval Service",
         "version": "1.0.0",
-        "description": "API موحد لجميع خدمات استرجاع المعلومات",
-        "note": "هذا API يجمع جميع الخدمات. للخدمات المنفصلة، استخدم:",
+        "description": "Unified API for all information retrieval services",
+        "note": "This API combines all services. For separate services, use:",
         "separate_services": {
             "query_processing": "http://localhost:8001",
             "search_ranking": "http://localhost:8002", 
             "indexing": "http://localhost:8003"
         },
         "endpoints": {
-            "POST /process-query": "معالجة الاستعلام",
-            "GET /process-query": "معالجة الاستعلام (GET)",
-            "POST /search": "البحث في الوثائق",
-            "GET /search": "البحث في الوثائق (GET)",
-            "POST /rank": "ترتيب النتائج فقط",
-            "GET /rank": "ترتيب النتائج فقط (GET)",
-            "GET /methods": "الطرق المتاحة",
-            "GET /health": "فحص صحة الخدمة"
+            "POST /process-query": "Process query",
+            "GET /process-query": "Process query (GET)",
+            "POST /search": "Search documents",
+            "GET /search": "Search documents (GET)",
+            "POST /rank": "Rank results only",
+            "GET /rank": "Rank results only (GET)",
+            "GET /methods": "Available methods",
+            "GET /health": "Service health check"
         }
     }
 
@@ -58,47 +58,47 @@ def get_available_methods():
         "status": "success",
         "query_processing_methods": {
             "tfidf": {
-                "description": "معالجة الاستعلام لـ TF-IDF",
-                "preprocessing": "Lemmatization, Tokenization, Lowercasing, إزالة التوقفات"
+                "description": "Query processing for TF-IDF",
+                "preprocessing": "Lemmatization, Tokenization, Lowercasing, Stop word removal"
             },
             "embedding": {
-                "description": "معالجة الاستعلام لـ Sentence Embeddings",
-                "preprocessing": "معالجة بسيطة (sentence-transformers يتعامل مع المعالجة الداخلية)"
+                "description": "Query processing for Sentence Embeddings",
+                "preprocessing": "Simple processing (sentence-transformers handles internal processing)"
             },
             "hybrid": {
-                "description": "معالجة الاستعلام للبحث الهجين المتوازي",
-                "preprocessing": "مزيج من TF-IDF و Embedding"
+                "description": "Query processing for parallel hybrid search",
+                "preprocessing": "Combination of TF-IDF and Embedding"
             },
             "hybrid-sequential": {
-                "description": "معالجة الاستعلام للبحث الهجين المتسلسل",
-                "preprocessing": "مزيج من TF-IDF و Embedding مع مراحل متسلسلة"
+                "description": "Query processing for sequential hybrid search",
+                "preprocessing": "Combination of TF-IDF and Embedding with sequential stages"
             }
         },
         "search_methods": {
             "tfidf": {
-                "description": "البحث باستخدام TF-IDF",
+                "description": "Search using TF-IDF",
                 "similarity": "Cosine Similarity",
-                "features": "تمثيل معجمي للكلمات"
+                "features": "Lexical word representation"
             },
             "embedding": {
-                "description": "البحث باستخدام Sentence Embeddings",
+                "description": "Search using Sentence Embeddings",
                 "similarity": "Cosine Similarity",
-                "features": "تمثيل دلالي للجمل"
+                "features": "Semantic sentence representation"
             },
             "hybrid": {
-                "description": "البحث الهجين المتوازي",
+                "description": "Parallel hybrid search",
                 "similarity": "Combined TF-IDF + Embedding",
-                "features": "دمج التمثيل المعجمي والدلالي"
+                "features": "Combining lexical and semantic representation"
             },
             "hybrid-sequential": {
-                "description": "البحث الهجين المتسلسل",
+                "description": "Sequential hybrid search",
                 "similarity": "Two-stage ranking",
-                "features": "مرحلة أولى ثم تحسين"
+                "features": "First stage then refinement"
             },
             "inverted_index": {
-                "description": "البحث باستخدام الفهرس المقلوب",
+                "description": "Search using inverted index",
                 "similarity": "Boolean matching",
-                "features": "بحث دقيق في النصوص"
+                "features": "Precise text search"
             }
         }
     }
@@ -106,7 +106,7 @@ def get_available_methods():
 @app.post("/process-query")
 def process_query_post(request: QueryRequest):
     try:
-        logger.info(f"معالجة استعلام: {request.query} بطريقة {request.method}")
+        logger.info(f"Processing query: {request.query} using method {request.method}")
         
         processor = QueryProcessor(
             method=request.method,
@@ -120,7 +120,7 @@ def process_query_post(request: QueryRequest):
         
         processing_info = processor.get_processing_info(request.query)
         
-        # المتجهات الآن قابلة للتسلسل تلقائياً من tfidf_vectorizer
+        # Vectors are now automatically serializable from tfidf_vectorizer
         
         return {
             "status": "success",
@@ -132,24 +132,24 @@ def process_query_post(request: QueryRequest):
         }
         
     except Exception as e:
-        logger.error(f"خطأ في معالجة الاستعلام: {e}")
+        logger.error(f"Error processing query: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في معالجة الاستعلام: {str(e)}"
+            detail=f"Error processing query: {str(e)}"
         )
 
 @app.post("/search")
 def search_documents(request: SearchRequest):
-    """البحث في الوثائق مع إرجاع المحتوى"""
+    """Search documents with content return"""
     try:
-        logger.info(f"البحث في الوثائق: {request.query} بطريقة {request.method}")
+        logger.info(f"Searching documents: {request.query} using method {request.method}")
         
         processor = QueryProcessor(
             method=request.method,
             dataset_name=request.dataset_name
         )
         
-        # البحث في الوثائق
+        # Search documents
         if request.method == "inverted_index":
             search_results = processor.search_with_index(
                 query=request.query,
@@ -165,7 +165,7 @@ def search_documents(request: SearchRequest):
                 top_n=request.top_n or 100
             )
         
-        # الحصول على محتوى الوثائق
+        # Get document content
         doc_ids = [result["doc_id"] for result in search_results["results"]]
         documents = processor.get_documents_by_ids(doc_ids)
         
@@ -177,24 +177,24 @@ def search_documents(request: SearchRequest):
         }
         
     except Exception as e:
-        logger.error(f"خطأ في البحث: {e}")
+        logger.error(f"Error in search: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في البحث: {str(e)}"
+            detail=f"Error in search: {str(e)}"
         )
 
 @app.post("/rank")
 def rank_documents(request: SearchRequest):
-    """ترتيب النتائج فقط بدون إرجاع المحتوى"""
+    """Rank results only without returning content"""
     try:
-        logger.info(f"ترتيب النتائج: {request.query} بطريقة {request.method}")
+        logger.info(f"Ranking results: {request.query} using method {request.method}")
         
         processor = QueryProcessor(
             method=request.method,
             dataset_name=request.dataset_name
         )
         
-        # البحث وترتيب النتائج
+        # Search and rank results
         search_results = processor.search(
             query=request.query,
             top_k=request.top_k,
@@ -216,34 +216,34 @@ def rank_documents(request: SearchRequest):
         }
         
     except Exception as e:
-        logger.error(f"خطأ في ترتيب النتائج: {e}")
+        logger.error(f"Error in ranking: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في ترتيب النتائج: {str(e)}"
+            detail=f"Error in ranking: {str(e)}"
         )
 
 @app.get("/search")
 def search_documents_get(
-    query: str = Query(..., description="النص الأصلي للاستعلام"),
-    method: str = Query("tfidf", description="طريقة البحث: tfidf, embedding, hybrid, hybrid-sequential, inverted_index"),
-    dataset_name: str = Query("simple", description="اسم مجموعة البيانات"),
-    top_k: int = Query(10, description="عدد النتائج المطلوبة"),
-    alpha: Optional[float] = Query(0.5, description="وزن TF-IDF في البحث الهجين"),
-    first_stage: Optional[str] = Query("tfidf", description="المرحلة الأولى في البحث المتسلسل"),
-    top_n: Optional[int] = Query(100, description="عدد النتائج المبدئية في البحث المتسلسل")
+    query: str = Query(..., description="Original query text"),
+    method: str = Query("tfidf", description="Search method: tfidf, embedding, hybrid, hybrid-sequential, inverted_index"),
+    dataset_name: str = Query("simple", description="Dataset name"),
+    top_k: int = Query(10, description="Number of results required"),
+    alpha: Optional[float] = Query(0.5, description="TF-IDF weight in hybrid search"),
+    first_stage: Optional[str] = Query("tfidf", description="First stage in sequential search"),
+    top_n: Optional[int] = Query(100, description="Initial number of results in sequential search")
 ):
-    """البحث في الوثائق مع إرجاع المحتوى (GET)"""
+    """Search documents with content return (GET)"""
     try:
         if not query or not query.strip():
             raise HTTPException(
                 status_code=400,
-                detail="الاستعلام لا يمكن أن يكون فارغاً"
+                detail="Query cannot be empty"
             )
         
         if method not in ["tfidf", "embedding", "hybrid", "hybrid-sequential", "inverted_index"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"طريقة البحث '{method}' غير مدعومة"
+                detail=f"Search method '{method}' not supported"
             )
         
         processor = QueryProcessor(
@@ -251,7 +251,7 @@ def search_documents_get(
             dataset_name=dataset_name
         )
         
-        # البحث في الوثائق
+        # Search documents
         if method == "inverted_index":
             search_results = processor.search_with_index(
                 query=query,
@@ -267,7 +267,7 @@ def search_documents_get(
                 top_n=top_n or 100
             )
         
-        # الحصول على محتوى الوثائق
+        # Get document content
         doc_ids = [result["doc_id"] for result in search_results["results"]]
         documents = processor.get_documents_by_ids(doc_ids)
         
@@ -281,34 +281,34 @@ def search_documents_get(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"خطأ في البحث: {e}")
+        logger.error(f"Error in search: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في البحث: {str(e)}"
+            detail=f"Error in search: {str(e)}"
         )
 
 @app.get("/rank")
 def rank_documents_get(
-    query: str = Query(..., description="النص الأصلي للاستعلام"),
-    method: str = Query("tfidf", description="طريقة الترتيب: tfidf, embedding, hybrid, hybrid-sequential"),
-    dataset_name: str = Query("simple", description="اسم مجموعة البيانات"),
-    top_k: int = Query(10, description="عدد النتائج المطلوبة"),
-    alpha: Optional[float] = Query(0.5, description="وزن TF-IDF في البحث الهجين"),
-    first_stage: Optional[str] = Query("tfidf", description="المرحلة الأولى في البحث المتسلسل"),
-    top_n: Optional[int] = Query(100, description="عدد النتائج المبدئية في البحث المتسلسل")
+    query: str = Query(..., description="Original query text"),
+    method: str = Query("tfidf", description="Ranking method: tfidf, embedding, hybrid, hybrid-sequential"),
+    dataset_name: str = Query("simple", description="Dataset name"),
+    top_k: int = Query(10, description="Number of results required"),
+    alpha: Optional[float] = Query(0.5, description="TF-IDF weight in hybrid search"),
+    first_stage: Optional[str] = Query("tfidf", description="First stage in sequential search"),
+    top_n: Optional[int] = Query(100, description="Initial number of results in sequential search")
 ):
-    """ترتيب النتائج فقط بدون إرجاع المحتوى (GET)"""
+    """Rank results only without returning content (GET)"""
     try:
         if not query or not query.strip():
             raise HTTPException(
                 status_code=400,
-                detail="الاستعلام لا يمكن أن يكون فارغاً"
+                detail="Query cannot be empty"
             )
         
         if method not in ["tfidf", "embedding", "hybrid", "hybrid-sequential"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"طريقة الترتيب '{method}' غير مدعومة"
+                detail=f"Ranking method '{method}' not supported"
             )
         
         processor = QueryProcessor(
@@ -316,7 +316,7 @@ def rank_documents_get(
             dataset_name=dataset_name
         )
         
-        # البحث وترتيب النتائج
+        # Search and rank results
         search_results = processor.search(
             query=query,
             top_k=top_k,
@@ -340,30 +340,30 @@ def rank_documents_get(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"خطأ في ترتيب النتائج: {e}")
+        logger.error(f"Error in ranking: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في ترتيب النتائج: {str(e)}"
+            detail=f"Error in ranking: {str(e)}"
         )
 
 @app.get("/process-query")
 def process_query_get(
-    query: str = Query(..., description="النص الأصلي للاستعلام"),
-    method: str = Query("tfidf", description="طريقة المعالجة: tfidf, embedding, hybrid"),
-    dataset_name: str = Query("simple", description="اسم مجموعة البيانات"),
-    return_vector: bool = Query(False, description="إرجاع المتجه بدلاً من النص المعالج")
+    query: str = Query(..., description="Original query text"),
+    method: str = Query("tfidf", description="Processing method: tfidf, embedding, hybrid"),
+    dataset_name: str = Query("simple", description="Dataset name"),
+    return_vector: bool = Query(False, description="Return vector instead of processed text")
 ):
     try:
         if not query or not query.strip():
             raise HTTPException(
                 status_code=400,
-                detail="الاستعلام لا يمكن أن يكون فارغاً"
+                detail="Query cannot be empty"
             )
         
         if method not in ["tfidf", "embedding", "hybrid", "hybrid-sequential"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"طريقة المعالجة '{method}' غير مدعومة"
+                detail=f"Processing method '{method}' not supported"
             )
         
         processor = QueryProcessor(
@@ -378,7 +378,7 @@ def process_query_get(
         
         processing_info = processor.get_processing_info(query)
         
-        # المتجهات الآن قابلة للتسلسل تلقائياً من tfidf_vectorizer
+        # Vectors are now automatically serializable from tfidf_vectorizer
         
         return {
             "status": "success",
@@ -392,10 +392,10 @@ def process_query_get(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"خطأ في معالجة الاستعلام: {e}")
+        logger.error(f"Error processing query: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"خطأ في معالجة الاستعلام: {str(e)}"
+            detail=f"Error processing query: {str(e)}"
         )
 
 @app.get("/health")

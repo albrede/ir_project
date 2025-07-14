@@ -7,11 +7,10 @@ from nltk.tokenize import word_tokenize
 import joblib
 import os
 import logging
-from services.preprocessing import preprocess_for_indexing, get_preprocessing_stats
-from services.vectorization.tfidf_vectorizer import load_tfidf_model
+import requests
+import requests
 from sklearn.metrics.pairwise import cosine_similarity
-from services.preprocessing import preprocess_for_vectorization
-from services.vectorization.embedding_vectorizer import load_embedding_model, get_embedding_vector
+import requests
 import numpy as np
 
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +38,82 @@ except Exception as e:
     stop_words = set()
     lemmatizer = None
 
-def preprocess(text):
-    return preprocess_for_indexing(text)
+def preprocess_for_indexing_via_api(text, min_token_length=2):
+    """Call preprocessing API for indexing"""
+    url = "http://localhost:8001/preprocess"
+    
+    payload = {
+        "text": text,
+        "return_tokens": True,
+        "min_length": min_token_length,
+        "remove_stopwords": True,
+        "use_lemmatization": True
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["result"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to preprocessing API: {e}")
+    except Exception as e:
+        raise Exception(f"Error processing text via API: {e}")
+
+def get_preprocessing_stats_via_api(text):
+    """Call preprocessing API for statistics"""
+    url = "http://localhost:8001/stats"
+    
+    payload = {
+        "text": text
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["statistics"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to preprocessing API: {e}")
+    except Exception as e:
+        raise Exception(f"Error getting statistics via API: {e}")
+
+def preprocess_for_vectorization_via_api(text):
+    """Call preprocessing API for vectorization"""
+    url = "http://localhost:8001/preprocess"
+    
+    payload = {
+        "text": text,
+        "return_tokens": False,
+        "min_length": 2,
+        "remove_stopwords": True,
+        "use_lemmatization": True
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return data["result"]
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to connect to preprocessing API: {e}")
+    except Exception as e:
+        raise Exception(f"Error processing text via API: {e}")
 
 def build_inverted_index(docs, min_token_length=2):
     if not docs:
@@ -67,9 +140,9 @@ def build_inverted_index(docs, min_token_length=2):
             if not doc_id or not content:
                 continue
                 
-            tokens = preprocess_for_indexing(content, min_token_length)
+            tokens = preprocess_for_indexing_via_api(content, min_token_length)
             
-            stats = get_preprocessing_stats(content)
+            stats = get_preprocessing_stats_via_api(content)
             total_tokens += stats.get('tokens_count', 0)
             total_stopwords_removed += stats.get('stopwords_removed', 0)
             total_short_words_removed += stats.get('short_words_removed', 0)
@@ -131,7 +204,7 @@ def load_index(dataset_name):
 def search_in_index(query, dataset_name, max_results=10, search_type='and'):
     try:
         index = load_index(dataset_name)
-        query_tokens = preprocess_for_indexing(query)
+        query_tokens = preprocess_for_indexing_via_api(query)
         if not query_tokens:
             logger.warning("No valid terms in query")
             return []
@@ -195,7 +268,7 @@ def get_index_statistics(dataset_name):
 def inverted_index_tfidf_search(query, dataset_name, max_results=10, limit_candidates=1000, search_type='and'):
     try:
         index = load_index(dataset_name)
-        query_tokens = preprocess_for_indexing(query)
+        query_tokens = preprocess_for_indexing_via_api(query)
         
         if not query_tokens:
             logger.warning("No valid terms in query")
@@ -228,7 +301,7 @@ def inverted_index_tfidf_search(query, dataset_name, max_results=10, limit_candi
         candidate_list = list(candidate_docs)[:limit_candidates]
         
         try:
-            vectorizer, tfidf_matrix, doc_ids = load_tfidf_model(dataset_name)
+            vectorizer, tfidf_matrix, doc_ids = load_tfidf_model_via_api(dataset_name)
             query_vector = vectorizer.transform([query])
             
             candidate_indices = []
@@ -265,8 +338,8 @@ def inverted_index_tfidf_search(query, dataset_name, max_results=10, limit_candi
 
 def embedding_search(query, dataset_name, max_results=10):
     try:
-        model, embedding_matrix, doc_ids = load_embedding_model(dataset_name)
-        query_vector = get_embedding_vector(model, query)
+        model, embedding_matrix, doc_ids = load_embedding_model_via_api(dataset_name)
+        query_vector = get_embedding_vector_via_api(dataset_name, query)
         # Normalize vectors for cosine similarity
         embedding_matrix_norm = embedding_matrix / (np.linalg.norm(embedding_matrix, axis=1, keepdims=True) + 1e-10)
         query_vector_norm = query_vector / (np.linalg.norm(query_vector) + 1e-10)
@@ -282,3 +355,94 @@ def embedding_search(query, dataset_name, max_results=10):
     except Exception as e:
         logger.error(f"Error in embedding search: {e}")
         return []
+
+def load_tfidf_model_via_api(dataset_name: str):
+    """Client function to load TF-IDF model via API"""
+    url = "http://localhost:8002/load-tfidf"
+    
+    payload = {
+        "dataset_name": dataset_name
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            # Load the actual model files
+            import os
+            import joblib
+            
+            clean_dataset_name = dataset_name.replace('/', '_')
+            model_path = os.path.join("models", f"{clean_dataset_name}_tfidf_model.joblib")
+            matrix_path = os.path.join("vectors", f"{clean_dataset_name}_tfidf_matrix.joblib")
+            
+            vectorizer = joblib.load(model_path)
+            data = joblib.load(matrix_path)
+            tfidf_matrix = data["matrix"]
+            doc_ids = data["doc_ids"]
+            
+            return vectorizer, tfidf_matrix, doc_ids
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to load TF-IDF model via API: {e}")
+
+def load_embedding_model_via_api(dataset_name: str):
+    """Client function to load Embedding model via API"""
+    url = "http://localhost:8003/load-embedding"
+    
+    payload = {
+        "dataset_name": dataset_name
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            # Load the actual model files
+            import os
+            import joblib
+            
+            clean_dataset_name = dataset_name.replace('/', '_')
+            model_path = os.path.join("models", f"{clean_dataset_name}_embedding_model.joblib")
+            vectors_path = os.path.join("vectors", f"{clean_dataset_name}_embedding_vectors.joblib")
+            
+            model = joblib.load(model_path)
+            data = joblib.load(vectors_path)
+            embeddings = data["embeddings"]
+            doc_ids = data["doc_ids"]
+            
+            return model, embeddings, doc_ids
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to load Embedding model via API: {e}")
+
+def get_embedding_vector_via_api(dataset_name: str, query: str):
+    """Client function to get Embedding vector via API"""
+    url = "http://localhost:8003/vectorize"
+    
+    payload = {
+        "dataset_name": dataset_name,
+        "query": query,
+        "return_serializable": False
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data["status"] == "success":
+            return np.array(data["vector"]).reshape(1, -1)
+        else:
+            raise Exception(f"API returned error: {data}")
+            
+    except Exception as e:
+        raise Exception(f"Failed to get Embedding vector via API: {e}")

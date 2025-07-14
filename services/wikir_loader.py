@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-كود مخصص لقراءة بيانات wikir مباشرة من الملفات المحلية
+Custom code for reading wikir data directly from local files
 """
 
 import csv
@@ -21,16 +21,16 @@ class WikirLoader:
         
     def load_documents_to_db(self, dataset_name: str = "wikir/en1k/test", limit: int = None) -> Dict[str, Any]:
         """
-        تحميل الوثائق من ملف CSV إلى قاعدة البيانات
+        Load documents from CSV file to database
         """
         try:
-            logger.info(f"بدء تحميل الوثائق من {self.documents_file}")
+            logger.info(f"Starting to load documents from {self.documents_file}")
             
-            # التحقق من وجود الملف
+            # Check if file exists
             if not os.path.exists(self.documents_file):
-                raise FileNotFoundError(f"ملف الوثائق غير موجود: {self.documents_file}")
+                raise FileNotFoundError(f"Documents file not found: {self.documents_file}")
             
-            # فتح قاعدة البيانات
+            # Open database
             db_path = "data/ir_documents.db"
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
@@ -38,36 +38,36 @@ class WikirLoader:
             loaded_count = 0
             start_time = datetime.now()
             
-            # قراءة ملف CSV مع معالجة الترميز
+            # Read CSV file with encoding handling
             encodings_to_try = ['utf-8', 'latin1', 'cp1252', 'iso-8859-1']
             
             for encoding in encodings_to_try:
                 try:
-                    logger.info(f"محاولة قراءة الملف بترميز {encoding}...")
+                    logger.info(f"Attempting to read file with encoding {encoding}...")
                     
                     with open(self.documents_file, 'r', encoding=encoding, newline='') as csvfile:
                         reader = csv.DictReader(csvfile)
                         
-                        # طباعة أسماء الأعمدة للتحقق
-                        logger.info(f"أسماء الأعمدة: {reader.fieldnames}")
+                        # Print column names for verification
+                        logger.info(f"Column names: {reader.fieldnames}")
                         
                         row_count = 0
                         for row in reader:
                             row_count += 1
                             try:
-                                # استخراج البيانات - استخدام أسماء الأعمدة الصحيحة
+                                # Extract data - use correct column names
                                 doc_id = str(row.get('id_right', ''))
                                 text = str(row.get('text_right', ''))
                                 
-                                # استخدام النص مباشرة
+                                # Use text directly
                                 content = text.strip()
                                 
-                                # التحقق من صحة البيانات
+                                # Validate data
                                 if not doc_id or not content:
-                                    logger.warning(f"تخطي صف {row_count}: doc_id='{doc_id}', content='{content[:50]}...'")
+                                    logger.warning(f"Skipping row {row_count}: doc_id='{doc_id}', content='{content[:50]}...'")
                                     continue
                                 
-                                # إدراج في قاعدة البيانات
+                                # Insert into database
                                 cursor.execute("""
                                     INSERT OR REPLACE INTO documents (doc_id, text, dataset)
                                     VALUES (?, ?, ?)
@@ -75,28 +75,28 @@ class WikirLoader:
                                 
                                 loaded_count += 1
                                 
-                                # التحقق من الحد
+                                # Check limit
                                 if limit and loaded_count >= limit:
                                     break
                                 
-                                # تسجيل التقدم
+                                # Log progress
                                 if loaded_count % 10000 == 0:
-                                    logger.info(f"تم تحميل {loaded_count} وثيقة...")
+                                    logger.info(f"Loaded {loaded_count} documents...")
                                     
                             except Exception as e:
-                                logger.warning(f"خطأ في معالجة وثيقة: {e}")
+                                logger.warning(f"Error processing document: {e}")
                                 continue
                     
-                    # إذا وصلنا هنا، نجحت القراءة
-                    logger.info(f"✅ نجح قراءة الملف بترميز {encoding}")
-                    logger.info(f"إجمالي الصفوف المقروءة: {row_count}")
+                    # If we reach here, reading was successful
+                    logger.info(f"✅ Successfully read file with encoding {encoding}")
+                    logger.info(f"Total rows read: {row_count}")
                     break
                     
                 except UnicodeDecodeError as e:
-                    logger.warning(f"فشل قراءة الملف بترميز {encoding}: {e}")
+                    logger.warning(f"Failed to read file with encoding {encoding}: {e}")
                     continue
                 except Exception as e:
-                    logger.warning(f"خطأ آخر في قراءة الملف بترميز {encoding}: {e}")
+                    logger.warning(f"Other error reading file with encoding {encoding}: {e}")
                     continue
             
             conn.commit()
@@ -105,7 +105,7 @@ class WikirLoader:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
             
-            logger.info(f"✅ تم تحميل {loaded_count} وثيقة في {duration:.2f} ثانية")
+            logger.info(f"✅ Loaded {loaded_count} documents in {duration:.2f} seconds")
             
             return {
                 "status": "success",
@@ -116,18 +116,18 @@ class WikirLoader:
             }
             
         except Exception as e:
-            logger.error(f"خطأ في تحميل الوثائق: {e}")
+            logger.error(f"Error loading documents: {e}")
             raise
     
     def load_test_queries(self) -> List[Dict[str, Any]]:
         """
-        تحميل استعلامات الاختبار
+        Load test queries
         """
         queries = []
         queries_file = self.test_queries_file
         
         if not os.path.exists(queries_file):
-            logger.warning(f"ملف الاستعلامات غير موجود: {queries_file}")
+            logger.warning(f"Queries file not found: {queries_file}")
             return queries
         
         try:
@@ -140,24 +140,24 @@ class WikirLoader:
                                 'query_id': row.get('query_id', ''),
                                 'query': row.get('query', '')
                             })
-                    logger.info(f"تم تحميل {len(queries)} استعلام بترميز {encoding}")
+                    logger.info(f"Loaded {len(queries)} queries with encoding {encoding}")
                     break
                 except UnicodeDecodeError:
                     continue
         except Exception as e:
-            logger.error(f"خطأ في تحميل الاستعلامات: {e}")
+            logger.error(f"Error loading queries: {e}")
         
         return queries
     
     def load_test_qrels(self) -> List[Dict[str, Any]]:
         """
-        تحميل ملف qrels للاختبار
+        Load qrels file for testing
         """
         qrels = []
         qrels_file = self.test_qrels_file
         
         if not os.path.exists(qrels_file):
-            logger.warning(f"ملف qrels غير موجود: {qrels_file}")
+            logger.warning(f"Qrels file not found: {qrels_file}")
             return qrels
         
         try:
@@ -170,20 +170,20 @@ class WikirLoader:
                             'doc_id': parts[2],
                             'relevance': int(parts[3])
                         })
-            logger.info(f"تم تحميل {len(qrels)} qrel")
+            logger.info(f"Loaded {len(qrels)} qrels")
         except Exception as e:
-            logger.error(f"خطأ في تحميل qrels: {e}")
+            logger.error(f"Error loading qrels: {e}")
         
         return qrels
 
 def load_wikir_from_local_files(dataset_name: str = "wikir/en1k/test", limit: int = None) -> Dict[str, Any]:
     """
-    دالة رئيسية لتحميل بيانات wikir من الملفات المحلية
+    Main function to load wikir data from local files
     """
     loader = WikirLoader()
     return loader.load_documents_to_db(dataset_name, limit)
 
 if __name__ == "__main__":
-    # اختبار الكود
+    # Test the code
     result = load_wikir_from_local_files(limit=1000)
-    print(f"نتيجة التحميل: {result}") 
+    print(f"Loading result: {result}") 
